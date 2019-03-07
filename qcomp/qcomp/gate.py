@@ -135,6 +135,12 @@ class MGate(Gate):
     def __mul__(self, other):
         return MGate(np.kron(self.matrix, other.matrix), self.qreg_size + other.qreg_size)
 
+    def __pow__(self, i):
+        if i==1:
+            return self
+        else:
+            return self*self**(i-1)
+
     def apply(self, qreg):
         new_state = self.matrix.dot(qreg.state)
         return QReg(len(qreg), new_state)
@@ -154,21 +160,6 @@ class PShiftGate(MGate):
     to apply hadamard gate to 3rd bit |000> we can form complex gate of form
     [ID, ID, Hadamard] 
     """
-
-    def __init__(self, gates):
-        """Form the complex gate. Note that new qregister size will be sum of
-        qregsize of all gates AND gates provided MUST have matrix form (instance of MGate)
-        
-        Parameters
-        -------------
-        **gates**: list of gates, they will be applied from top to bottom
-        """
-        matrix_form = np.array([[1]], dtype=np.complex64)
-        qreg_size = 0
-        for gate in gates:
-            matrix_form = np.kron(matrix_form, gate.matrix)
-            qreg_size += gate.qreg_size
-        super(VChain, self).__init__(matrix_form, qreg_size)
 
 I = MGate(np.eye(2), 1)
 H = MGate( 1 / np.sqrt(2) * np.array( [ [1,1] , [1,-1]] ), 1)
@@ -215,18 +206,17 @@ def apply_gate_atbits(gate, qreg, target_bits):
     spectator_bits_i = 0
     for b in target_bits:
         spectator_bits_i = spectator_bits_i | (1<<b)
-    spectator_bits_i = np.invert(spectator_bits_i)
-    
+    print(bin(spectator_bits_i))    
+    spectator_bits_i = ((1<< qreg.nbits)-1) - spectator_bits_i
+    print(bin(spectator_bits_i))
     # create base states
     bases = np.arange(0,2**qreg.nbits)
     
     # extract spectator bits
-    specbits = np.argsort(bases & spectator_bits_i, kind='stable')   # subgoup them<
-    specbits = specbits.reshape([2**(qreg.nbits-len(target_bits)), 2**len(target_bits)])
-
-    # apply gate to subgroups
+    specbits = np.argsort(bases & spectator_bits_i, kind='mergesort')
+    print(specbits)
     new_qreg = qreg.copy()
-    for i in range(len(specbits)):
-        new_qreg.state[specbits[i]] = gate.matrix.dot(new_qreg.state[specbits[i]])
+    for i in range(0,2**new_qreg.nbits, 2**len(target_bits)):
+        new_qreg.state[specbits[i:i+2**len(target_bits)]] = gate.matrix.dot(new_qreg.state[specbits[i:i+2**len(target_bits)]])
     return new_qreg
 
