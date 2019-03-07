@@ -65,35 +65,6 @@ class QReg():
         """
         self.state = self.state / norm(self.state)
 
-    def swap(self, q0, q1):
-        """Swap the two bits of system (q0th and q1th). E.g. 
-        010 -> 100 swapped 0th and 1st bit
-
-        Swapping is done through bitwise xor with "state" that has 1s on desired bits. To swap 0th and 1st bit we xor with 110 (last one is 0 because we dont change that). E.g.
-        110 xor 010 -> (1 xor 0)(1 xor 1)(0 xor 0) -> 100
-        Problem arises when both swapped bits are same (00 or 11). Like,
-        110 xor 001 -> (1 xor 0)(1 xor 0)(0 xor 0) -> 110 (we needed first two bits stay as 0)
-        So extra check is done by making sure they are not same by using bitwise and with each individual bit which is the shifted to LSB and compared. If input is 110
-        100 and 110 -> 100 - shift to LSB -> 001
-        010 and 110 -> 010 -shift to LSB -> 001
-        if results are same that means no swapping should be done
-        """
-        shift0 = self.nbits - q0 -1
-        shift1 = self.nbits - q1 -1
-        swapper_1 = 1 << shift0
-        swapper_2 = 1 << shift1
-        swapper = swapper_1 | swapper_2
-        swappedstate = np.zeros_like(self.state)
-        for i in range(len(self.state)):
-            ex1 = (swapper_1 & i) >> shift0
-            ex2 = (swapper_2 & i) >> shift1
-            if ex1 == ex2:
-                swappedstate[i] = self.state[i]
-            else:
-                opp_i = swapper ^ i
-                swappedstate[opp_i] = self.state[i]
-        self.state = swappedstate
-
     def gather(self, qbits):
         """Swap the desired bits to then LSB slots (end of register).
         E.g. we have stat |11010>

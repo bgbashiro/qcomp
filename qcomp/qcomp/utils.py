@@ -9,6 +9,7 @@ import copy
 
 ### Sparse Matrices
 
+
 class element(object):
     def __init__(self,rowIndex,colIndex,value):
         self.rowIndex = rowIndex
@@ -84,4 +85,3 @@ class SparseMatrix(object):
         kronProd = SparseMatrix(this.rowSize*that.rowSize, this.colSize*that.colSize)
         kronProd.elements = new1
         return kronProd
-

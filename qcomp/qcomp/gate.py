@@ -51,6 +51,7 @@ import numpy as np
 from .qbit import *
 from .qregister import *
 from .utils import *
+from functools import reduce
 
 def construct_unitary_F(fdef, in_size=None):
     """Given fdef construct appropriate unitary transformation matrix, probably useful for grovers algorithm
@@ -128,6 +129,12 @@ class MGate(Gate):
         super(MGate, self).__init__(qreg_size)
         self.matrix = matrix 
 
+    def __add__(self, other):
+        return MGate(np.matmul(self.matrix, other.matrix),self.qreg_size)
+
+    def __mul__(self, other):
+        return MGate(np.kron(self.matrix, other.matrix), self.qreg_size + other.qreg_size)
+
     def apply(self, qreg):
         new_state = self.matrix.dot(qreg.state)
         return QReg(len(qreg), new_state)
@@ -142,26 +149,6 @@ class PShiftGate(MGate):
         ])
         super(PShiftGate, self).__init__(matrix,1)
 
-class HChain(Gate):
-    """Chain of gates that will be applied one by one
-    """
-
-    def __init__(self, gates):
-        qsizes = [g.qreg_size for g in gates]
-        assert all([qsizes[0] == q for q in qsizes]), "All gates should have same qregsize, use ID gate for spectators"
-        self.gates = gates
-        super(HChain, self).__init__(qsizes[0])
-
-    def apply(self, qreg):
-        # copy the input register
-        temp_reg = qreg.copy()
-
-        # apply gates sequentally
-        for gate in self.gates:
-            temp_reg = gate.apply(temp_reg)
-        return temp_reg
-
-class VChain(MGate):
     """Form a single gate (that will be applied to register in one step) 
     by joining different matrices. It is **different** from gate chain. Example use case:
     to apply hadamard gate to 3rd bit |000> we can form complex gate of form
@@ -183,119 +170,63 @@ class VChain(MGate):
             qreg_size += gate.qreg_size
         super(VChain, self).__init__(matrix_form, qreg_size)
 
-class SGate(Gate):
-    """Swapping Gate. Normally, matrix form of a gate which acts on 2qbits(usually using one of them as control), will apply to neighbouring bits. This one utilizes swapping to work on desired bits and swaps them back. Because SGates do not have matrix form they cannot be VChained
-    """
-    def __init__(self, matrix, cbit, abit, qreg_size):
-        """Make a gate that has defined matrix form, which will entangle bits specified rather than neighbours.
-
-        Parameters:
-        matrix.: matrix form of gate (4x4 expected as it will act on 2 bits)
-        control_bit: first bit it acts on (usually used as control)
-        act_bit: second bit it acts on (usually bit that will change when control bit is 0)
-        """
-        self.inner_gate = VChain([MGate(matrix,2)] + [I]*(qreg_size-2))
-        self.b0 = cbit
-        self.b1 = abit
-        super(SGate, self).__init__(qreg_size)
-
-    def apply(self, qreg):
-        temp_reg = qreg.copy()
-        # move control bit to 0, act bit to 1
-        temp_reg.swap(0,self.b0)
-        temp_reg.swap(1,self.b1)
-        temp_reg = self.inner_gate.apply(temp_reg)
-        # swap moved bits back
-        temp_reg.swap(self.b0, 0)
-        temp_reg.swap(self.b1, 1)
-        return temp_reg
-
-class CGate(SGate):
-    """Controlled gate. This one will act on the second bit (in some predefined way) when control bit is 0. Otherwise it stays intact. Controlled gates have matrix in the from
-    [1 0 0  0]
-    [0 1 0 0]
-    [0 0 a b]
-    [0 0 c d]
-    where a,b,c,d are transformation matrix that will be applied (when cbit is 1). These are SGate, so cannot be V-Chained
-    """
-    def __init__(self, transformation_matrix, cbit=0, abit=1, qreg_size=2):
-        M = np.eye(4, dtype=np.complex)
-        M[-2:,-2:] = transformation_matrix
-        super(CGate, self).__init__(M,cbit,abit,qreg_size)
-
-class CPSGate(CGate):
-    """Controlled Phase Shift Gate
-    """
-    def __init__(self, phi, cbit=0, abit=1, qreg_size=2):
-        """Parameters
-        phi: amount of shift
-        cbit: control bit
-        abit: bit that will it act on
-        qreg_size: size of Quantum register
-        """
-        matrix = PShiftGate(phi).matrix
-        super(CPSGate, self).__init__(matrix, cbit, abit, qreg_size)
-
-class CCGate(Gate):
-    """Similar to CGate except two bits are used for control. When both is one transformation is applied, otherwise nothing is done
-    """
-    def __init__(self, transformation_matrix, cbits=[0,1], abit=2, qreg_size=3):
-        """by defualt prepares 3 qbit gate that uses first 2 as control, acts on 3rd
-        """
-        self.c0 = cbits[0]
-        self.c1 = cbits[1]
-        self.a = abit
-        M = np.eye(2**3, dtype=np.complex)
-        M[-2:,-2:] = transformation_matrix
-        self.inner_gate = VChain([MGate(M,3)] + [I]*(qreg_size - 3))
-        self.qreg_size = self.inner_gate.qreg_size
-
-    def apply(self, qreg):
-        temp_reg = qreg.copy()
-        # swap control bits
-        temp_reg.swap(0,self.c0)
-        temp_reg.swap(1,self.c1)
-        # move acting bit
-        temp_reg.swap(2,self.a)
-        temp_reg = self.inner_gate.apply(temp_reg)
-        # put things back
-        temp_reg.swap(0,self.c0)
-        temp_reg.swap(1,self.c1)
-        # move acting bit
-        temp_reg.swap(2,self.a)
-        return temp_reg
-
-class MultiCGate(Gate):
-    """Extension of CCGate to more than 2 qbits. Currently not working, needs gather and scatter to be implemented in the QReg class
-    """
-    def __init__(self, transformation_matrix, cbits, abit, qreg_size):
-        self.c = cbits
-        self.a = abit
-        cmatrix_size = len(self.c)+1
-        M = np.eye(cmatrix_size)
-        M[-2:,-2:] = transformation_matrix
-        self.inner_gate = VChain([MGate(M, cmatrix_size)] + [I]*(qreg_size - cmatrix_size))
-    
-    def apply(self, qreg):
-        temp_qreg = qreg.copy()
-        temp_qreg.gather(self.c + [self.a])
-        self.inner_gate.apply(temp_qreg)
-        temp_qreg.scatter()
-        return temp_qreg
-
 I = MGate(np.eye(2), 1)
 H = MGate( 1 / np.sqrt(2) * np.array( [ [1,1] , [1,-1]] ), 1)
 
 # not gates
-not_array = np.array([
-    [0,1],[1,0]
-])
-NOT = MGate(not_array, 1)
+NOT = MGate(np.array([
+    [0,1],
+    [1,0]
+]), 1)
+CNOT = MGate(np.array([
+    [1,0,0,0],
+    [0,1,0,0],
+    [0,0,0,1],
+    [0,0,1,0]
+]), 2)
 
-class CNOT(CGate):
-    def __init__(self, cbit, abit, qreg_size):
-        super(CNOT, self).__init__(not_array, cbit, abit, qreg_size)
+CNOT_r = MGate(np.array([
+    [1,0,0,0],[0,0,0,1],[0,0,1,0],[0,1,0,0]
+]), 2)
+cc_array = np.eye(8)
+cc_array[-2:,-2:] = np.array([[0,1],[1,0]])
+CCNOT = MGate(np.array(cc_array),3)
 
-class CCNOT(CCGate):
-    def __init__(self,cbits, abit, qreg_size):
-        super(CCNOT, self).__init__(not_array, cbits, abit, qreg_size)
+SWAP = MGate(np.array([
+    [1,0,0,0],[0,0,1,0],[0,1,0,0],[0,0,0,1]
+]), 2)
+
+def swap_bits(qreg,q0,q1):
+    if q0 > q1:
+        q0,q1=q1,q0
+    t_qreg = qreg.copy()
+    for c_pointer in range(q0,q1):
+        glist = [I] * (c_pointer) + [SWAP] + [I] * (qreg.nbits-c_pointer-2)
+        big_g = reduce(lambda g1,g2:g1*g2, glist)
+        t_qreg = big_g.apply(t_qreg)
+    for c_pointer in range(q0,q1)[:-1:-1]:
+        glist = [I] * c_pointer + [SWAP] + [I] * (qreg.nbits-c_pointer-2)
+        big_g = reduce(lambda g1,g2:g1*g2, glist)
+        t_qreg = big_g.apply(t_qreg)
+    return t_qreg
+
+def apply_gate_atbits(gate, qreg, target_bits):
+    
+    spectator_bits_i = 0
+    for b in target_bits:
+        spectator_bits_i = spectator_bits_i | (1<<b)
+    spectator_bits_i = np.invert(spectator_bits_i)
+    
+    # create base states
+    bases = np.arange(0,2**qreg.nbits)
+    
+    # extract spectator bits
+    specbits = np.argsort(bases & spectator_bits_i, kind='stable')   # subgoup them<
+    specbits = specbits.reshape([2**(qreg.nbits-len(target_bits)), 2**len(target_bits)])
+
+    # apply gate to subgroups
+    new_qreg = qreg.copy()
+    for i in range(len(specbits)):
+        new_qreg.state[specbits[i]] = gate.matrix.dot(new_qreg.state[specbits[i]])
+    return new_qreg
+
