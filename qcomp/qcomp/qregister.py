@@ -3,6 +3,7 @@
 
 import numpy as np
 from numpy.linalg import norm
+from .qbit import QBit
 
 def mk_reg(qbits):
     """Using kron product construct a quantum register from single bits
@@ -101,4 +102,4 @@ class QReg():
         state_1_proba = (state_1_coeffs**2).sum()
         state_0_coeffs = self.state[[b[i_qbit] == '0' for b in self.bases]]
         state_0_proba = (state_0_coeffs**2).sum()
-        return "{}|0> + {}|1>".format(state_0_proba, state_1_proba)
+        return "{}|0> + {}|1>".format(state_0_proba, state_1_proba), QBit([state_0_proba, state_1_proba])
