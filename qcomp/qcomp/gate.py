@@ -98,9 +98,6 @@ class Gate():
     def __init__(self,qreg_size):
         self.qreg_size = qreg_size
 
-    def __add__(self, other):
-        return Sequence([self, other])
-
 
     def apply(self, qreg):
         """Apply the gate to the given register 
