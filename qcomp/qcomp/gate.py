@@ -98,6 +98,9 @@ class Gate():
     def __init__(self,qreg_size):
         self.qreg_size = qreg_size
 
+    def __add__(self, other):
+        return Sequence([self, other])
+
 
     def apply(self, qreg):
         """Apply the gate to the given register 
@@ -129,7 +132,7 @@ class MGate(Gate):
         super(MGate, self).__init__(qreg_size)
         self.matrix = matrix 
 
-    def __add__(self, other):
+    def __add__(self,other):
         return MGate(np.matmul(self.matrix, other.matrix),self.qreg_size)
 
     def __mul__(self, other):
@@ -187,36 +190,68 @@ SWAP = MGate(np.array([
     [1,0,0,0],[0,0,1,0],[0,1,0,0],[0,0,0,1]
 ]), 2)
 
-def swap_bits(qreg,q0,q1):
-    if q0 > q1:
-        q0,q1=q1,q0
-    t_qreg = qreg.copy()
-    for c_pointer in range(q0,q1):
-        glist = [I] * (c_pointer) + [SWAP] + [I] * (qreg.nbits-c_pointer-2)
-        big_g = reduce(lambda g1,g2:g1*g2, glist)
-        t_qreg = big_g.apply(t_qreg)
-    for c_pointer in range(q0,q1)[:-1:-1]:
-        glist = [I] * c_pointer + [SWAP] + [I] * (qreg.nbits-c_pointer-2)
-        big_g = reduce(lambda g1,g2:g1*g2, glist)
-        t_qreg = big_g.apply(t_qreg)
-    return t_qreg
+class LazyGate(Gate):
 
-def apply_gate_atbits(gate, qreg, target_bits):
-    
-    spectator_bits_i = 0
-    for b in target_bits:
-        spectator_bits_i = spectator_bits_i | (1<<b)
-    print(bin(spectator_bits_i))    
-    spectator_bits_i = ((1<< qreg.nbits)-1) - spectator_bits_i
-    print(bin(spectator_bits_i))
-    # create base states
-    bases = np.arange(0,2**qreg.nbits)
-    
-    # extract spectator bits
-    specbits = np.argsort(bases & spectator_bits_i, kind='mergesort')
-    print(specbits)
-    new_qreg = qreg.copy()
-    for i in range(0,2**new_qreg.nbits, 2**len(target_bits)):
-        new_qreg.state[specbits[i:i+2**len(target_bits)]] = gate.matrix.dot(new_qreg.state[specbits[i:i+2**len(target_bits)]])
-    return new_qreg
+    def __init__(self, matrix, qbpos, qreg_size):
+        super().__init__(qreg_size)
+        
+        self.matrix = matrix
+        self.msize = 2**len(qbpos)
+        self.qsize = 2**qreg_size
+        self.bases = np.arange(self.qsize)
 
+        self.qbpos = qbpos
+        self.specpos = list(filter(lambda x : not x in qbpos, range(qreg_size)))
+
+        # time to shuffle indices
+        # first group the indices which has same spectators
+        self.bases = self.bases[np.argsort(self.gather_spectators())]
+        # next for each group sort the necessary bits in order
+        gbits = self.gather_qbpos()
+        for i in range(0, self.qsize,self.msize):
+            self.bases[i:i+self.msize] = self.bases[i:i+self.msize][np.argsort(gbits[i:i+self.msize])]
+
+    def apply(self, qreg):
+        new_state=np.zeros(len(qreg.state), dtype=np.complex)
+        for i in range(0, self.qsize,self.msize):
+            new_state[self.bases[i:i+self.msize]] = self.matrix.dot(qreg.state[self.bases[i:i+self.msize]])
+
+        return QReg(len(qreg), new_state)
+
+    def gather_qbpos(self):
+        return np.array([self.get_qbpos(b) for b in self.bases])
+
+    def gather_spectators(self):
+        return np.array([self.get_spectator(b) for b in self.bases])
+
+    def get_qbpos(self, base):
+        a = 0
+        for i in range(len(self.qbpos)):
+            q = self.qbpos[i]
+            a = a | ((base & (1<<q)) >> q) << len(self.qbpos)-i-1
+        return a
+    
+    def get_spectator(self, base):
+        a = 0
+        for i in range(len(self.specpos)):
+            q = self.specpos[i]
+            a = a | ((base & (1<<q)) >> (q-i))
+        return a
+
+class LazyCNOT:
+
+    def __init__(self, ncontrols):
+        self.ncontrols = ncontrols
+    
+    def dot(self, qreg_state):
+        new_state = qreg_state.copy()
+        new_state[-1], new_state[-2] = new_state[-2], new_state[-1]
+        return new_state
+
+class LazyNOT:
+
+    def __init__(self, nbits):
+        self.nbits = nbits
+
+    def dot(self, qreg_state):
+        return qreg_state[::-1]
