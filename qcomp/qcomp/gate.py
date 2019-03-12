@@ -157,7 +157,9 @@ class MGate(Gate):
         return MGate(np.kron(self.matrix, other.matrix), self.qreg_size + other.qreg_size)
 
     def __pow__(self, i):
-        if i==1:
+        if i==0:
+            return MGate(np.array([[1]]),0)
+        elif i==1:
             return self
         else:
             return self*self**(i-1)
