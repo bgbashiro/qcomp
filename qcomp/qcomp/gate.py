@@ -187,36 +187,12 @@ SWAP = MGate(np.array([
     [1,0,0,0],[0,0,1,0],[0,1,0,0],[0,0,0,1]
 ]), 2)
 
-def swap_bits(qreg,q0,q1):
-    if q0 > q1:
-        q0,q1=q1,q0
-    t_qreg = qreg.copy()
-    for c_pointer in range(q0,q1):
-        glist = [I] * (c_pointer) + [SWAP] + [I] * (qreg.nbits-c_pointer-2)
-        big_g = reduce(lambda g1,g2:g1*g2, glist)
-        t_qreg = big_g.apply(t_qreg)
-    for c_pointer in range(q0,q1)[:-1:-1]:
-        glist = [I] * c_pointer + [SWAP] + [I] * (qreg.nbits-c_pointer-2)
-        big_g = reduce(lambda g1,g2:g1*g2, glist)
-        t_qreg = big_g.apply(t_qreg)
-    return t_qreg
-
-def apply_gate_atbits(gate, qreg, target_bits):
-    
-    spectator_bits_i = 0
-    for b in target_bits:
-        spectator_bits_i = spectator_bits_i | (1<<b)
-    print(bin(spectator_bits_i))    
-    spectator_bits_i = ((1<< qreg.nbits)-1) - spectator_bits_i
-    print(bin(spectator_bits_i))
-    # create base states
-    bases = np.arange(0,2**qreg.nbits)
-    
-    # extract spectator bits
-    specbits = np.argsort(bases & spectator_bits_i, kind='mergesort')
-    print(specbits)
-    new_qreg = qreg.copy()
-    for i in range(0,2**new_qreg.nbits, 2**len(target_bits)):
-        new_qreg.state[specbits[i:i+2**len(target_bits)]] = gate.matrix.dot(new_qreg.state[specbits[i:i+2**len(target_bits)]])
-    return new_qreg
-
+class CPSGate(MGate):
+    def __init__(self, phi):
+        matrix = np.array([
+            [1,0,0,0],
+            [0,1,0,0],
+            [0,0,1,0],
+            [0,0,0,np.exp(phi*1j)]
+        ])
+        super(CPSGate, self).__init__(matrix, 2)
