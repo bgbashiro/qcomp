@@ -98,6 +98,12 @@ class Gate():
     def __init__(self,qreg_size):
         self.qreg_size = qreg_size
 
+    def __add__(self, other):
+        ss = Sequence(self.qreg_size)
+        ss.add(self)
+        ss.add(other)
+        return ss
+
 
     def apply(self, qreg):
         """Apply the gate to the given register 
@@ -111,6 +117,24 @@ class Gate():
         """
         assert qreg.nbits == self.qreg_size, "This gate cannot be applied to register of size {}. Expected size: {}".format(qreg.nbits, self.qreg_size)
         raise NotImplementedError("Apply method not implemented yet!")
+
+class Sequence(Gate):
+
+    def __init__(self, qreg_size):
+        self.seq = []
+        super(Sequence, self).__init__(qreg_size)
+    
+    def add(self, other):
+        if isinstance(other, Sequence):
+            self.seq += other.seq
+        else:
+            self.seq += [other]
+
+    def apply(self, qreg):
+        tqreg = qreg.copy()
+        for g in self.seq:
+            tqreg = g.apply(tqreg)
+        return tqreg
 
 class MGate(Gate):
     """Gate that is formed by providing matrix form
@@ -128,9 +152,6 @@ class MGate(Gate):
         assert (2**qreg_size == matrix.shape[0]), "Matrix dimensions and intended qreg size do not match"
         super(MGate, self).__init__(qreg_size)
         self.matrix = matrix 
-
-    def __add__(self,other):
-        return MGate(np.matmul(self.matrix, other.matrix),self.qreg_size)
 
     def __mul__(self, other):
         return MGate(np.kron(self.matrix, other.matrix), self.qreg_size + other.qreg_size)
