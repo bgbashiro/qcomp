@@ -252,3 +252,12 @@ class LazyNOT:
 
     def dot(self, qreg_state):
         return qreg_state[::-1]
+class CPSGate(MGate):
+    def __init__(self, phi):
+        matrix = np.array([
+            [1,0,0,0],
+            [0,1,0,0],
+            [0,0,1,0],
+            [0,0,0,np.exp(phi*1j)]
+        ])
+        super(CPSGate, self).__init__(matrix, 2)
