@@ -146,7 +146,7 @@ class MGate(Gate):
         return QReg(len(qreg), new_state)
 
 class PShiftGate(MGate):
-    """Phase Shift Gate (on single qbit)
+    """Phase Shift Gate (on single qbit) 
     """
     def __init__(self, phi):
         matrix = np.array([
