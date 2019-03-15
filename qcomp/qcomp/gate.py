@@ -154,7 +154,7 @@ class MGate(Gate):
         self.matrix = matrix 
 
     def __mul__(self, other):
-        return MGate(np.kron(self.matrix, other.matrix), self.qreg_size + other.qreg_size)
+        return MGate(kron(self.matrix, other.matrix), self.qreg_size + other.qreg_size)
 
     def __pow__(self, i):
         if i==0:

@@ -7,8 +7,15 @@ This is module that contains mathematical manipulations needed for inner working
 import numpy as np
 import copy
 
-### Sparse Matrices
+def kron(b,a):
+    c = np.empty([b.shape[0]*a.shape[0], b.shape[1]*a.shape[1]])
+    for i in range(b.shape[0]):
+        for j in range(b.shape[1]):
+            c[i*a.shape[0]:(i+1)*a.shape[0],j*a.shape[1]:(j+1)*a.shape[1]] = b[i,j]*a
+    return c
 
+
+### Sparse Matrices
 
 class element(object):
     def __init__(self,rowIndex,colIndex,value):

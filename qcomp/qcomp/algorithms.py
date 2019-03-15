@@ -1,6 +1,6 @@
 from .gate import H, I, construct_unitary_F
 from .qregister import mk_reg
-from .qbit import ZERO, MINUS
+from .qbit import PLUS, MINUS
 import numpy as np
 
 class Grover:
@@ -18,7 +18,7 @@ class Grover:
     def run_iteration(self, n_iterations=None):
         if n_iterations is None:
             n_iterations = int(np.sqrt(2**self.nbits))
-        register = self.HS.apply(mk_reg([ZERO]*self.nbits + [MINUS]))
+        register = mk_reg([PLUS]*self.nbits + [MINUS])
         for _ in range(n_iterations):
             register = self.circuit.apply(register)
 
