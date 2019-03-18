@@ -1,4 +1,2 @@
 numpy
 jupyter
-pdoc
-pytest

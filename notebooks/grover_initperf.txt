@@ -1,0 +1,13 @@
+Timer unit: 1e-06 s
+
+Total time: 0.958824 s
+File: /home/s1542425/Desktop/qcomp/.env/lib/python3.4/site-packages/qcomp/algorithms.py
+Function: __init__ at line 8
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+     8                                               def __init__(self, nbits):
+     9         1          7.0      7.0      0.0          self.nbits = nbits
+    10         1     955786.0 955786.0     99.7          self.HS = H**nbits * I
+    11         1       3029.0   3029.0      0.3          self.U0 = construct_unitary_F(["0"*nbits])
+    12         1          2.0      2.0      0.0          self.oracle = None

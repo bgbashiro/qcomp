@@ -1,0 +1,13 @@
+Timer unit: 1e-06 s
+
+Total time: 1.3646 s
+File: <ipython-input-95-bca27a32ab9d>
+Function: run_grover_perf at line 1
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+     1                                           def run_grover_perf(nb):
+     2         1     898193.0 898193.0     65.8      gr = Grover(nb)
+     3         1         12.0     12.0      0.0      orc = "".join(['0' if random.random()>0.5 else '1' for _ in range(nb)])
+     4         1       2995.0   2995.0      0.2      gr.def_oracle(orc)
+     5         1     463403.0 463403.0     34.0      freg = gr.run_iteration()
