@@ -1,7 +1,7 @@
 """
 This is module that contains mathematical manipulations needed for inner workings of Quantum Computer. 
 * SparseMatrix for high performance linear algebra operations
-* !Not written yet, unified matrix API, which can utilize np arrays or sparse matrices under the hood
+* kron product: version of tensor product useful in Quantum Computing
 """
 
 import numpy as np

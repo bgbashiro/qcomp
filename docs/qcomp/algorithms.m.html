@@ -3,7 +3,7 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 
-    <title>qcomp API documentation</title>
+    <title>qcomp.algorithms API documentation</title>
     <meta name="description" content="" />
 
   <link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,300' rel='stylesheet' type='text/css'>
@@ -1042,15 +1042,22 @@ table {
     <ul id="index">
 
 
-
-    <li class="set"><h3><a href="#header-submodules">Sub-modules</a></h3>
+    <li class="set"><h3><a href="#header-classes">Classes</a></h3>
       <ul>
-        <li class="mono"><a href="algorithms.m.html">qcomp.algorithms</a></li>
-        <li class="mono"><a href="gate.m.html">qcomp.gate</a></li>
-        <li class="mono"><a href="qbit.m.html">qcomp.qbit</a></li>
-        <li class="mono"><a href="qregister.m.html">qcomp.qregister</a></li>
+        <li class="mono">
+        <span class="class_name"><a href="#qcomp.algorithms.Grover">Grover</a></span>
+        
+          
+  <ul>
+    <li class="mono"><a href="#qcomp.algorithms.Grover.__init__">__init__</a></li>
+    <li class="mono"><a href="#qcomp.algorithms.Grover.def_oracle">def_oracle</a></li>
+    <li class="mono"><a href="#qcomp.algorithms.Grover.run_iteration">run_iteration</a></li>
+  </ul>
+
+        </li>
       </ul>
     </li>
+
     </ul>
   </div>
 
@@ -1062,12 +1069,50 @@ table {
 
 
   <header id="section-intro">
-  <h1 class="title"><span class="name">qcomp</span> module</h1>
+  <h1 class="title"><span class="name">qcomp.algorithms</span> module</h1>
   
   
-  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-qcomp', this);">Show source &equiv;</a></p>
-  <div id="source-qcomp" class="source">
-    <div class="codehilite"><pre><span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;qbit&#39;</span><span class="p">,</span><span class="s1">&#39;qregister&#39;</span><span class="p">,</span><span class="s1">&#39;gate&#39;</span><span class="p">,</span><span class="s1">&#39;algorithms&#39;</span><span class="p">]</span>
+  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-qcomp.algorithms', this);">Show source &equiv;</a></p>
+  <div id="source-qcomp.algorithms" class="source">
+    <div class="codehilite"><pre><span></span><span class="kn">from</span> <span class="nn">.gate</span> <span class="kn">import</span> <span class="n">H</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">construct_unitary_F</span>
+<span class="kn">from</span> <span class="nn">.qregister</span> <span class="kn">import</span> <span class="n">mk_reg</span>
+<span class="kn">from</span> <span class="nn">.qbit</span> <span class="kn">import</span> <span class="n">PLUS</span><span class="p">,</span> <span class="n">MINUS</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="k">class</span> <span class="nc">Grover</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Wrapper around gate and register modules that makes it easy to run grover algorithms. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nbits</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create instance of Grover algorithm</span>
+<span class="sd">        *nbits* : number of bits in input space</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">=</span> <span class="n">nbits</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">HS</span> <span class="o">=</span> <span class="n">H</span><span class="o">**</span><span class="n">nbits</span> <span class="o">*</span> <span class="n">I</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">U0</span> <span class="o">=</span> <span class="n">construct_unitary_F</span><span class="p">([</span><span class="s2">&quot;0&quot;</span><span class="o">*</span><span class="n">nbits</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oracle</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">def_oracle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fdef</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add oracle to the algorithm</span>
+<span class="sd">        *fdef* : str, the input that will map to 1 </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oracle</span> <span class="o">=</span> <span class="n">construct_unitary_F</span><span class="p">([</span><span class="n">fdef</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">oracle</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">HS</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">U0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">HS</span>
+
+    <span class="k">def</span> <span class="nf">run_iteration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_iterations</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Run the algorithm</span>
+<span class="sd">        *n_iterations* : number of iterations the circuit will be applied (defaule 2^sqrt(nbits))</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        *qreg* : QReg, final form of register</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">n_iterations</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">n_iterations</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">nbits</span><span class="p">))</span>
+        <span class="n">register</span> <span class="o">=</span> <span class="n">mk_reg</span><span class="p">([</span><span class="n">PLUS</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">+</span> <span class="p">[</span><span class="n">MINUS</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_iterations</span><span class="p">):</span>
+            <span class="n">register</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">register</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">register</span>
 </pre></div>
 
   </div>
@@ -1077,46 +1122,198 @@ table {
   <section id="section-items">
 
 
-
-    <h2 class="section-title" id="header-submodules">Sub-modules</h2>
+    <h2 class="section-title" id="header-classes">Classes</h2>
+      
       <div class="item">
-      <p class="name"><a href="algorithms.m.html">qcomp.algorithms</a></p>
+      <p id="qcomp.algorithms.Grover" class="name">class <span class="ident">Grover</span></p>
       
   
+    <div class="desc"><p>Wrapper around gate and register modules that makes it easy to run grover algorithms.</p></div>
+  <div class="source_cont">
+  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-qcomp.algorithms.Grover', this);">Show source &equiv;</a></p>
+  <div id="source-qcomp.algorithms.Grover" class="source">
+    <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Grover</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Wrapper around gate and register modules that makes it easy to run grover algorithms. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
-      </div>
-      <div class="item">
-      <p class="name"><a href="gate.m.html">qcomp.gate</a></p>
-      
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nbits</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create instance of Grover algorithm</span>
+<span class="sd">        *nbits* : number of bits in input space</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">=</span> <span class="n">nbits</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">HS</span> <span class="o">=</span> <span class="n">H</span><span class="o">**</span><span class="n">nbits</span> <span class="o">*</span> <span class="n">I</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">U0</span> <span class="o">=</span> <span class="n">construct_unitary_F</span><span class="p">([</span><span class="s2">&quot;0&quot;</span><span class="o">*</span><span class="n">nbits</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oracle</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">def_oracle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fdef</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add oracle to the algorithm</span>
+<span class="sd">        *fdef* : str, the input that will map to 1 </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oracle</span> <span class="o">=</span> <span class="n">construct_unitary_F</span><span class="p">([</span><span class="n">fdef</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">oracle</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">HS</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">U0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">HS</span>
+
+    <span class="k">def</span> <span class="nf">run_iteration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_iterations</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Run the algorithm</span>
+<span class="sd">        *n_iterations* : number of iterations the circuit will be applied (defaule 2^sqrt(nbits))</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        *qreg* : QReg, final form of register</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">n_iterations</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">n_iterations</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">nbits</span><span class="p">))</span>
+        <span class="n">register</span> <span class="o">=</span> <span class="n">mk_reg</span><span class="p">([</span><span class="n">PLUS</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">+</span> <span class="p">[</span><span class="n">MINUS</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_iterations</span><span class="p">):</span>
+            <span class="n">register</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">register</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">register</span>
+</pre></div>
+
+  </div>
+</div>
+
+
+      <div class="class">
+          <h3>Ancestors (in MRO)</h3>
+          <ul class="class_list">
+          <li><a href="#qcomp.algorithms.Grover">Grover</a></li>
+          <li>builtins.object</li>
+          </ul>
+          <h3>Static methods</h3>
+            
+  <div class="item">
+    <div class="name def" id="qcomp.algorithms.Grover.__init__">
+    <p>def <span class="ident">__init__</span>(</p><p>self, nbits)</p>
+    </div>
+    
+
+    
   
-    <div class="desc"><p>gate module exposes Gate classes and common instances and means to join them to create circuit using operators * and +</p>
-<p>(*) :: joins the gates that acts on whole register. E.g. a this how to make gate that acts Hadamard on 1st and 3rd qbit</p>
-<blockquote>
-<blockquote>
-<blockquote>
-<p>HIH = H<em>I</em>H
-HIH.apply(mk_reg([ONE,ONE,PLUS])) 
-0.00...</p>
-</blockquote>
-</blockquote>
-</blockquote></div>
+    <div class="desc"><p>Create instance of Grover algorithm
+<em>nbits</em> : number of bits in input space</p></div>
+  <div class="source_cont">
+  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-qcomp.algorithms.Grover.__init__', this);">Show source &equiv;</a></p>
+  <div id="source-qcomp.algorithms.Grover.__init__" class="source">
+    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nbits</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create instance of Grover algorithm</span>
+<span class="sd">    *nbits* : number of bits in input space</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">=</span> <span class="n">nbits</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">HS</span> <span class="o">=</span> <span class="n">H</span><span class="o">**</span><span class="n">nbits</span> <span class="o">*</span> <span class="n">I</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">U0</span> <span class="o">=</span> <span class="n">construct_unitary_F</span><span class="p">([</span><span class="s2">&quot;0&quot;</span><span class="o">*</span><span class="n">nbits</span><span class="p">])</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">oracle</span> <span class="o">=</span> <span class="bp">None</span>
+</pre></div>
 
-      </div>
-      <div class="item">
-      <p class="name"><a href="qbit.m.html">qcomp.qbit</a></p>
-      
+  </div>
+</div>
+
+  </div>
   
-    <div class="desc"><p>qbit module contains class QBit, and constants
-ZERO, ONE which represent 1-qbit |0&gt; and |1&gt; states</p></div>
+            
+  <div class="item">
+    <div class="name def" id="qcomp.algorithms.Grover.def_oracle">
+    <p>def <span class="ident">def_oracle</span>(</p><p>self, fdef)</p>
+    </div>
+    
 
-      </div>
-      <div class="item">
-      <p class="name"><a href="qregister.m.html">qcomp.qregister</a></p>
-      
+    
   
-    <div class="desc"><p>qregister module exposes QReg object and extra functions needed for register manupulation</p></div>
+    <div class="desc"><p>Add oracle to the algorithm
+<em>fdef</em> : str, the input that will map to 1</p></div>
+  <div class="source_cont">
+  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-qcomp.algorithms.Grover.def_oracle', this);">Show source &equiv;</a></p>
+  <div id="source-qcomp.algorithms.Grover.def_oracle" class="source">
+    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">def_oracle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fdef</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Add oracle to the algorithm</span>
+<span class="sd">    *fdef* : str, the input that will map to 1 </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">oracle</span> <span class="o">=</span> <span class="n">construct_unitary_F</span><span class="p">([</span><span class="n">fdef</span><span class="p">])</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">oracle</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">HS</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">U0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">HS</span>
+</pre></div>
 
+  </div>
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="qcomp.algorithms.Grover.run_iteration">
+    <p>def <span class="ident">run_iteration</span>(</p><p>self, n_iterations=None)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Run the algorithm
+<em>n_iterations</em> : number of iterations the circuit will be applied (defaule 2^sqrt(nbits))</p>
+<p>Returns:
+<em>qreg</em> : QReg, final form of register</p></div>
+  <div class="source_cont">
+  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-qcomp.algorithms.Grover.run_iteration', this);">Show source &equiv;</a></p>
+  <div id="source-qcomp.algorithms.Grover.run_iteration" class="source">
+    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">run_iteration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_iterations</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Run the algorithm</span>
+<span class="sd">    *n_iterations* : number of iterations the circuit will be applied (defaule 2^sqrt(nbits))</span>
+<span class="sd">    Returns:</span>
+<span class="sd">    *qreg* : QReg, final form of register</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">n_iterations</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">n_iterations</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">nbits</span><span class="p">))</span>
+    <span class="n">register</span> <span class="o">=</span> <span class="n">mk_reg</span><span class="p">([</span><span class="n">PLUS</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">+</span> <span class="p">[</span><span class="n">MINUS</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_iterations</span><span class="p">):</span>
+        <span class="n">register</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">register</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">register</span>
+</pre></div>
+
+  </div>
+</div>
+
+  </div>
+  
+          <h3>Instance variables</h3>
+            <div class="item">
+            <p id="qcomp.algorithms.Grover.HS" class="name">var <span class="ident">HS</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="qcomp.algorithms.Grover.U0" class="name">var <span class="ident">U0</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="qcomp.algorithms.Grover.nbits" class="name">var <span class="ident">nbits</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="qcomp.algorithms.Grover.oracle" class="name">var <span class="ident">oracle</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
       </div>
+      </div>
+
   </section>
 
     </article>

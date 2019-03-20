@@ -1062,7 +1062,6 @@ table {
     <li class="mono"><a href="#qcomp.qregister.QReg.get_qbit">get_qbit</a></li>
     <li class="mono"><a href="#qcomp.qregister.QReg.normalize">normalize</a></li>
     <li class="mono"><a href="#qcomp.qregister.QReg.scatter">scatter</a></li>
-    <li class="mono"><a href="#qcomp.qregister.QReg.swap">swap</a></li>
   </ul>
 
         </li>
@@ -1090,6 +1089,7 @@ table {
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="kn">import</span> <span class="n">norm</span>
+<span class="kn">from</span> <span class="nn">.qbit</span> <span class="kn">import</span> <span class="n">QBit</span>
 
 <span class="k">def</span> <span class="nf">mk_reg</span><span class="p">(</span><span class="n">qbits</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Using kron product construct a quantum register from single bits</span>
@@ -1152,35 +1152,6 @@ table {
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">/</span> <span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">swap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">q0</span><span class="p">,</span> <span class="n">q1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Swap the two bits of system (q0th and q1th). E.g. </span>
-<span class="sd">        010 -&gt; 100 swapped 0th and 1st bit</span>
-
-<span class="sd">        Swapping is done through bitwise xor with &quot;state&quot; that has 1s on desired bits. To swap 0th and 1st bit we xor with 110 (last one is 0 because we dont change that). E.g.</span>
-<span class="sd">        110 xor 010 -&gt; (1 xor 0)(1 xor 1)(0 xor 0) -&gt; 100</span>
-<span class="sd">        Problem arises when both swapped bits are same (00 or 11). Like,</span>
-<span class="sd">        110 xor 001 -&gt; (1 xor 0)(1 xor 0)(0 xor 0) -&gt; 110 (we needed first two bits stay as 0)</span>
-<span class="sd">        So extra check is done by making sure they are not same by using bitwise and with each individual bit which is the shifted to LSB and compared. If input is 110</span>
-<span class="sd">        100 and 110 -&gt; 100 - shift to LSB -&gt; 001</span>
-<span class="sd">        010 and 110 -&gt; 010 -shift to LSB -&gt; 001</span>
-<span class="sd">        if results are same that means no swapping should be done</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">shift0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">-</span> <span class="n">q0</span> <span class="o">-</span><span class="mi">1</span>
-        <span class="n">shift1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">-</span> <span class="n">q1</span> <span class="o">-</span><span class="mi">1</span>
-        <span class="n">swapper_1</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">shift0</span>
-        <span class="n">swapper_2</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">shift1</span>
-        <span class="n">swapper</span> <span class="o">=</span> <span class="n">swapper_1</span> <span class="o">|</span> <span class="n">swapper_2</span>
-        <span class="n">swappedstate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)):</span>
-            <span class="n">ex1</span> <span class="o">=</span> <span class="p">(</span><span class="n">swapper_1</span> <span class="o">&amp;</span> <span class="n">i</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">shift0</span>
-            <span class="n">ex2</span> <span class="o">=</span> <span class="p">(</span><span class="n">swapper_2</span> <span class="o">&amp;</span> <span class="n">i</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">shift1</span>
-            <span class="k">if</span> <span class="n">ex1</span> <span class="o">==</span> <span class="n">ex2</span><span class="p">:</span>
-                <span class="n">swappedstate</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">opp_i</span> <span class="o">=</span> <span class="n">swapper</span> <span class="o">^</span> <span class="n">i</span>
-                <span class="n">swappedstate</span><span class="p">[</span><span class="n">opp_i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">swappedstate</span>
-
     <span class="k">def</span> <span class="nf">gather</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qbits</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Swap the desired bits to then LSB slots (end of register).</span>
 <span class="sd">        E.g. we have stat |11010&gt;</span>
@@ -1217,7 +1188,7 @@ table {
         <span class="n">state_1_proba</span> <span class="o">=</span> <span class="p">(</span><span class="n">state_1_coeffs</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
         <span class="n">state_0_coeffs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[[</span><span class="n">b</span><span class="p">[</span><span class="n">i_qbit</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;0&#39;</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bases</span><span class="p">]]</span>
         <span class="n">state_0_proba</span> <span class="o">=</span> <span class="p">(</span><span class="n">state_0_coeffs</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-        <span class="k">return</span> <span class="s2">&quot;{}|0&gt; + {}|1&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">state_0_proba</span><span class="p">,</span> <span class="n">state_1_proba</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;{}|0&gt; + {}|1&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">state_0_proba</span><span class="p">,</span> <span class="n">state_1_proba</span><span class="p">),</span> <span class="n">QBit</span><span class="p">([</span><span class="n">state_0_proba</span><span class="p">,</span> <span class="n">state_1_proba</span><span class="p">])</span>
 </pre></div>
 
   </div>
@@ -1326,35 +1297,6 @@ state: array of coefficients of each basis state</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">/</span> <span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">swap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">q0</span><span class="p">,</span> <span class="n">q1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Swap the two bits of system (q0th and q1th). E.g. </span>
-<span class="sd">        010 -&gt; 100 swapped 0th and 1st bit</span>
-
-<span class="sd">        Swapping is done through bitwise xor with &quot;state&quot; that has 1s on desired bits. To swap 0th and 1st bit we xor with 110 (last one is 0 because we dont change that). E.g.</span>
-<span class="sd">        110 xor 010 -&gt; (1 xor 0)(1 xor 1)(0 xor 0) -&gt; 100</span>
-<span class="sd">        Problem arises when both swapped bits are same (00 or 11). Like,</span>
-<span class="sd">        110 xor 001 -&gt; (1 xor 0)(1 xor 0)(0 xor 0) -&gt; 110 (we needed first two bits stay as 0)</span>
-<span class="sd">        So extra check is done by making sure they are not same by using bitwise and with each individual bit which is the shifted to LSB and compared. If input is 110</span>
-<span class="sd">        100 and 110 -&gt; 100 - shift to LSB -&gt; 001</span>
-<span class="sd">        010 and 110 -&gt; 010 -shift to LSB -&gt; 001</span>
-<span class="sd">        if results are same that means no swapping should be done</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">shift0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">-</span> <span class="n">q0</span> <span class="o">-</span><span class="mi">1</span>
-        <span class="n">shift1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">-</span> <span class="n">q1</span> <span class="o">-</span><span class="mi">1</span>
-        <span class="n">swapper_1</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">shift0</span>
-        <span class="n">swapper_2</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">shift1</span>
-        <span class="n">swapper</span> <span class="o">=</span> <span class="n">swapper_1</span> <span class="o">|</span> <span class="n">swapper_2</span>
-        <span class="n">swappedstate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)):</span>
-            <span class="n">ex1</span> <span class="o">=</span> <span class="p">(</span><span class="n">swapper_1</span> <span class="o">&amp;</span> <span class="n">i</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">shift0</span>
-            <span class="n">ex2</span> <span class="o">=</span> <span class="p">(</span><span class="n">swapper_2</span> <span class="o">&amp;</span> <span class="n">i</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">shift1</span>
-            <span class="k">if</span> <span class="n">ex1</span> <span class="o">==</span> <span class="n">ex2</span><span class="p">:</span>
-                <span class="n">swappedstate</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">opp_i</span> <span class="o">=</span> <span class="n">swapper</span> <span class="o">^</span> <span class="n">i</span>
-                <span class="n">swappedstate</span><span class="p">[</span><span class="n">opp_i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">swappedstate</span>
-
     <span class="k">def</span> <span class="nf">gather</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qbits</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Swap the desired bits to then LSB slots (end of register).</span>
 <span class="sd">        E.g. we have stat |11010&gt;</span>
@@ -1391,7 +1333,7 @@ state: array of coefficients of each basis state</p>
         <span class="n">state_1_proba</span> <span class="o">=</span> <span class="p">(</span><span class="n">state_1_coeffs</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
         <span class="n">state_0_coeffs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[[</span><span class="n">b</span><span class="p">[</span><span class="n">i_qbit</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;0&#39;</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bases</span><span class="p">]]</span>
         <span class="n">state_0_proba</span> <span class="o">=</span> <span class="p">(</span><span class="n">state_0_coeffs</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-        <span class="k">return</span> <span class="s2">&quot;{}|0&gt; + {}|1&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">state_0_proba</span><span class="p">,</span> <span class="n">state_1_proba</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;{}|0&gt; + {}|1&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">state_0_proba</span><span class="p">,</span> <span class="n">state_1_proba</span><span class="p">),</span> <span class="n">QBit</span><span class="p">([</span><span class="n">state_0_proba</span><span class="p">,</span> <span class="n">state_1_proba</span><span class="p">])</span>
 </pre></div>
 
   </div>
@@ -1521,7 +1463,7 @@ There is swap method which swaps two bits at a time. This one probably use it in
     <span class="n">state_1_proba</span> <span class="o">=</span> <span class="p">(</span><span class="n">state_1_coeffs</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
     <span class="n">state_0_coeffs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[[</span><span class="n">b</span><span class="p">[</span><span class="n">i_qbit</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;0&#39;</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bases</span><span class="p">]]</span>
     <span class="n">state_0_proba</span> <span class="o">=</span> <span class="p">(</span><span class="n">state_0_coeffs</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-    <span class="k">return</span> <span class="s2">&quot;{}|0&gt; + {}|1&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">state_0_proba</span><span class="p">,</span> <span class="n">state_1_proba</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;{}|0&gt; + {}|1&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">state_0_proba</span><span class="p">,</span> <span class="n">state_1_proba</span><span class="p">),</span> <span class="n">QBit</span><span class="p">([</span><span class="n">state_0_proba</span><span class="p">,</span> <span class="n">state_1_proba</span><span class="p">])</span>
 </pre></div>
 
   </div>
@@ -1572,62 +1514,6 @@ Does not return anything</p></div>
     <span class="sd">&quot;&quot;&quot;Reverse what gather has done</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Do not try it bro!&quot;</span><span class="p">)</span>
-</pre></div>
-
-  </div>
-</div>
-
-  </div>
-  
-            
-  <div class="item">
-    <div class="name def" id="qcomp.qregister.QReg.swap">
-    <p>def <span class="ident">swap</span>(</p><p>self, q0, q1)</p>
-    </div>
-    
-
-    
-  
-    <div class="desc"><p>Swap the two bits of system (q0th and q1th). E.g. 
-010 -&gt; 100 swapped 0th and 1st bit</p>
-<p>Swapping is done through bitwise xor with "state" that has 1s on desired bits. To swap 0th and 1st bit we xor with 110 (last one is 0 because we dont change that). E.g.
-110 xor 010 -&gt; (1 xor 0)(1 xor 1)(0 xor 0) -&gt; 100
-Problem arises when both swapped bits are same (00 or 11). Like,
-110 xor 001 -&gt; (1 xor 0)(1 xor 0)(0 xor 0) -&gt; 110 (we needed first two bits stay as 0)
-So extra check is done by making sure they are not same by using bitwise and with each individual bit which is the shifted to LSB and compared. If input is 110
-100 and 110 -&gt; 100 - shift to LSB -&gt; 001
-010 and 110 -&gt; 010 -shift to LSB -&gt; 001
-if results are same that means no swapping should be done</p></div>
-  <div class="source_cont">
-  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-qcomp.qregister.QReg.swap', this);">Show source &equiv;</a></p>
-  <div id="source-qcomp.qregister.QReg.swap" class="source">
-    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">swap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">q0</span><span class="p">,</span> <span class="n">q1</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Swap the two bits of system (q0th and q1th). E.g. </span>
-<span class="sd">    010 -&gt; 100 swapped 0th and 1st bit</span>
-<span class="sd">    Swapping is done through bitwise xor with &quot;state&quot; that has 1s on desired bits. To swap 0th and 1st bit we xor with 110 (last one is 0 because we dont change that). E.g.</span>
-<span class="sd">    110 xor 010 -&gt; (1 xor 0)(1 xor 1)(0 xor 0) -&gt; 100</span>
-<span class="sd">    Problem arises when both swapped bits are same (00 or 11). Like,</span>
-<span class="sd">    110 xor 001 -&gt; (1 xor 0)(1 xor 0)(0 xor 0) -&gt; 110 (we needed first two bits stay as 0)</span>
-<span class="sd">    So extra check is done by making sure they are not same by using bitwise and with each individual bit which is the shifted to LSB and compared. If input is 110</span>
-<span class="sd">    100 and 110 -&gt; 100 - shift to LSB -&gt; 001</span>
-<span class="sd">    010 and 110 -&gt; 010 -shift to LSB -&gt; 001</span>
-<span class="sd">    if results are same that means no swapping should be done</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">shift0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">-</span> <span class="n">q0</span> <span class="o">-</span><span class="mi">1</span>
-    <span class="n">shift1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">-</span> <span class="n">q1</span> <span class="o">-</span><span class="mi">1</span>
-    <span class="n">swapper_1</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">shift0</span>
-    <span class="n">swapper_2</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">shift1</span>
-    <span class="n">swapper</span> <span class="o">=</span> <span class="n">swapper_1</span> <span class="o">|</span> <span class="n">swapper_2</span>
-    <span class="n">swappedstate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)):</span>
-        <span class="n">ex1</span> <span class="o">=</span> <span class="p">(</span><span class="n">swapper_1</span> <span class="o">&amp;</span> <span class="n">i</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">shift0</span>
-        <span class="n">ex2</span> <span class="o">=</span> <span class="p">(</span><span class="n">swapper_2</span> <span class="o">&amp;</span> <span class="n">i</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">shift1</span>
-        <span class="k">if</span> <span class="n">ex1</span> <span class="o">==</span> <span class="n">ex2</span><span class="p">:</span>
-            <span class="n">swappedstate</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">opp_i</span> <span class="o">=</span> <span class="n">swapper</span> <span class="o">^</span> <span class="n">i</span>
-            <span class="n">swappedstate</span><span class="p">[</span><span class="n">opp_i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">swappedstate</span>
 </pre></div>
 
   </div>

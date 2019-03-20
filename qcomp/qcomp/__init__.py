@@ -1,1 +1,1 @@
-__all__ = ['qbit','qregister','gate']
+__all__ = ['qbit','qregister','gate','algorithms']
