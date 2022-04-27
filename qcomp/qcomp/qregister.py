@@ -90,10 +90,10 @@ class QReg():
     def __repr__(self):
         """print state of qreg as a|00..0> + b|00..1> + ...
         """
-        representation = ""
-        for coeff, base in zip(self.state, self.bases):
-            representation += "{0:.2f} \t |{1}> \n".format(coeff, base)
-        return representation
+        return "".join(
+            "{0:.2f} \t |{1}> \n".format(coeff, base)
+            for coeff, base in zip(self.state, self.bases)
+        )
 
     def get_qbit(self, i_qbit):
         """Get state of ith qbit
@@ -102,4 +102,6 @@ class QReg():
         state_1_proba = (state_1_coeffs**2).sum()
         state_0_coeffs = self.state[[b[i_qbit] == '0' for b in self.bases]]
         state_0_proba = (state_0_coeffs**2).sum()
-        return "{}|0> + {}|1>".format(state_0_proba, state_1_proba), QBit([state_0_proba, state_1_proba])
+        return f"{state_0_proba}|0> + {state_1_proba}|1>", QBit(
+            [state_0_proba, state_1_proba]
+        )

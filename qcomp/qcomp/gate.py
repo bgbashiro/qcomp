@@ -40,15 +40,14 @@ def construct_unitary_F(fdef, in_size=None):
     cmatrix = np.zeros([2**reg_size,2**reg_size])
     for base, i_col in zip(dummy_bases, range(0,2**reg_size,2)):
         if base in fdef:
-            target_state = int(base+"1",2)
+            target_state = int(f"{base}1", 2)
             cmatrix[target_state,i_col] = 1
-            target_state = int(base+"0",2)
-            cmatrix[target_state,i_col+1] = 1
+            target_state = int(f"{base}0", 2)
         else:
-            target_state = int(base+"0",2)
+            target_state = int(f"{base}0", 2)
             cmatrix[target_state,i_col] = 1
-            target_state = int(base+"1",2)
-            cmatrix[target_state,i_col+1] = 1
+            target_state = int(f"{base}1", 2)
+        cmatrix[target_state,i_col+1] = 1
     return MGate(cmatrix,reg_size)
 
 class Gate():
@@ -87,7 +86,10 @@ class Gate():
         ----------
         new_qreg : QReg object created after transformation
         """
-        assert qreg.nbits == self.qreg_size, "This gate cannot be applied to register of size {}. Expected size: {}".format(qreg.nbits, self.qreg_size)
+        assert (
+            qreg.nbits == self.qreg_size
+        ), f"This gate cannot be applied to register of size {qreg.nbits}. Expected size: {self.qreg_size}"
+
         raise NotImplementedError("Apply method not implemented yet!")
 
 class Sequence(Gate):
@@ -99,10 +101,7 @@ class Sequence(Gate):
         super(Sequence, self).__init__(qreg_size)
     
     def add(self, other):
-        if isinstance(other, Sequence):
-            self.seq += other.seq
-        else:
-            self.seq += [other]
+        self.seq += other.seq if isinstance(other, Sequence) else [other]
 
     def apply(self, qreg):
         tqreg = qreg.copy()
@@ -211,14 +210,14 @@ class LazyGate(Gate):
         *qreg_size* : size of register it will act on
         """
         super().__init__(qreg_size)
-        
+
         self.matrix = matrix
         self.msize = 2**len(qbpos)
         self.qsize = 2**qreg_size
         self.bases = np.arange(self.qsize)
 
         self.qbpos = qbpos
-        self.specpos = list(filter(lambda x : not x in qbpos, range(qreg_size)))
+        self.specpos = list(filter(lambda x: x not in qbpos, range(qreg_size)))
 
         # time to shuffle indices
         # first group the indices which has same spectators

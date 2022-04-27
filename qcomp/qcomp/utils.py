@@ -43,8 +43,8 @@ class SparseMatrix(object):
     def multiplySparseMatrix(self,that):
         elements = []
         assert self.colSize == that.rowSize,"Matrix Sizes Are Incompatible!!!"
-        for i in range(0,self.rowSize):
-            for j in range(0,that.colSize):
+        for i in range(self.rowSize):
+            for j in range(that.colSize):
                 values = []
                 for n in self.elements:
                     for m in that.elements:
@@ -65,30 +65,29 @@ class SparseMatrix(object):
             _ = matrix.shape[1]
         except IndexError:
             matrix = matrix.reshape([-1,1])
-        new = SparseMatrix(matrix.shape[0],matrix.shape[1])        
-        for i in range(0,matrix.shape[0]):
-            for j in range(0,matrix.shape[1]):
+        new = SparseMatrix(matrix.shape[0],matrix.shape[1])
+        for i in range(matrix.shape[0]):
+            for j in range(matrix.shape[1]):
                 if matrix[i][j] != 0:
                     new.elements.append(element(i,j,matrix[i][j]))
         return new
 
     def scalarMultiply(self,scalar):
-        for i in range(0,len(self.elements)):
+        for i in range(len(self.elements)):
             self.elements[i].value = scalar*self.elements[i].value
     @staticmethod
     def kronSparse(this,that):
         new1 = []
         for element in this.elements:
             new = copy.deepcopy(that)
-            for i in range(0,len(new.elements)):
+            for i in range(len(new.elements)):
                 new.elements[i].value = element.value*new.elements[i].value
             cornerRow = element.rowIndex*that.rowSize
             cornerCol = element.colIndex*that.colSize
-            for i in range (0,len(new.elements)):
+            for i in range(len(new.elements)):
                 new.elements[i].rowIndex += cornerRow
                 new.elements[i].colIndex += cornerCol
-            for element in new.elements:
-                new1.append(element)
+            new1.extend(iter(new.elements))
         kronProd = SparseMatrix(this.rowSize*that.rowSize, this.colSize*that.colSize)
         kronProd.elements = new1
         return kronProd
