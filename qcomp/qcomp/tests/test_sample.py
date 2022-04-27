@@ -18,8 +18,8 @@ def test_smatrix():
     sM = sparseMatrix(3,4)
 
 
-    for i in range(0,3):
-        for j in range(0,3):
+    for i in range(3):
+        for j in range(3):
             if i%2 == 0:
                 sN.elements.append(element(i,j,1))
             if j%2 == 0:

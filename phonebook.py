@@ -23,28 +23,25 @@ def main():
     # chooses random name 
     k = np.random.randint((len(names)))
     print(numbers[k])
-    print("Looking for " + names[k] + "'s number")
+    print(f"Looking for {names[k]}" + "'s number")
 
     # oracle construction
     fdef = bin(k)[2:]
     fdef = "0"*(n-len(fdef)) + fdef
     g.def_oracle(fdef)
-    print("We are looking for " + fdef)
+    print(f"We are looking for {fdef}")
 
     # running the algorithm
     reg = g.run_iteration()
     final = ""
     for i in range(reg.nbits-1):
         _, p = reg.get_qbit(i)
-        if p.state[0]>0.5:
-            final += '0'
-        else:
-            final += '1'
+        final += '0' if p.state[0]>0.5 else '1'
     for i in range(reg.nbits):
         print(reg.get_qbit(i)[0])
-    
+
     # output of answers
-    print("Probably looking for : "+final)
-    print("Found Number: " + numbers[int(final,2)])
+    print(f"Probably looking for : {final}")
+    print(f"Found Number: {numbers[int(final,2)]}")
 
 main()

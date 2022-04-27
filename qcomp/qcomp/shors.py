@@ -19,18 +19,16 @@ class shors(object):
             print(M.gcd(self.a,self.N))
             if M.gcd(self.a,self.N) == 1:
                 self.QFT()
-                if self.period % 2:
-                    break
-                else:
+                if not self.period % 2:
                     self.root1 = M.gcd(int(self.a**(self.period/2)+1),self.N)
                     self.root2 = M.gcd(int(self.a**(self.period/2)-1),self.N)
-                    break
+                break
             else:
                 self.root3 = self.N/self.gcd
 
 
     def generateSequence(self):
-        for i in range(0,self.Q):
+        for i in range(self.Q):
             self.seqList.append([i, self.a**i % self.N])
 
 
